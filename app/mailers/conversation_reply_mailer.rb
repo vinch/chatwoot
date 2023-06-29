@@ -80,11 +80,11 @@ class ConversationReplyMailer < ApplicationMailer
   end
 
   def sender_name
-    @sender_name ||= current_message&.sender&.name || @agent&.available_name || 'Notifications'
+    @sender_name ||= current_message&.sender&.available_name || @agent&.available_name || 'Notifications'
   end
 
   def current_message
-    @message || @messages.last
+    @message || @conversation.messages.outgoing.last
   end
 
   def mail_subject
@@ -160,6 +160,20 @@ class ConversationReplyMailer < ApplicationMailer
     return [] unless content_attributes[:cc_emails] || content_attributes[:bcc_emails]
 
     [content_attributes[:cc_emails], content_attributes[:bcc_emails]]
+  end
+
+  def to_emails_from_content_attributes
+    content_attributes = @conversation.messages.outgoing.last&.content_attributes
+
+    return [] unless content_attributes
+    return [] unless content_attributes[:to_emails]
+
+    content_attributes[:to_emails]
+  end
+
+  def to_emails
+    # if there is no to_emails from content_attributes, send it to @contact&.email
+    to_emails_from_content_attributes.presence || [@contact&.email]
   end
 
   def inbound_email_enabled?
